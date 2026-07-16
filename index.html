@@ -1818,13 +1818,21 @@
       }
 
       document.getElementById("scannedCalories").value =
-        currentScannedProduct.calories ?? "";
+        currentScannedProduct.calories === null
+          ? ""
+          : roundValue(currentScannedProduct.calories);
       document.getElementById("scannedProtein").value =
-        currentScannedProduct.protein ?? "";
+        currentScannedProduct.protein === null
+          ? ""
+          : roundValue(currentScannedProduct.protein);
       document.getElementById("scannedFats").value =
-        currentScannedProduct.fats ?? "";
+        currentScannedProduct.fats === null
+          ? ""
+          : roundValue(currentScannedProduct.fats);
       document.getElementById("scannedCarbs").value =
-        currentScannedProduct.carbs ?? "";
+        currentScannedProduct.carbs === null
+          ? ""
+          : roundValue(currentScannedProduct.carbs);
       document.getElementById("scannedGrams").value = "100";
 
       document.getElementById("productResult").classList.add("active");
