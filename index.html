@@ -1327,28 +1327,43 @@
       setScannerStatus("Opening camera...");
 
       try {
-        barcodeScanner = new Html5Qrcode("barcodeReader");
-
         const formats = [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF
         ];
 
+        barcodeScanner = new Html5Qrcode("barcodeReader", {
+          formatsToSupport: formats,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          },
+          verbose: false
+        });
+
         await barcodeScanner.start(
-          { facingMode: "environment" },
           {
-            fps: 10,
+            facingMode: {
+              exact: "environment"
+            }
+          },
+          {
+            fps: 20,
             qrbox: function(viewfinderWidth, viewfinderHeight) {
-              const width = Math.floor(viewfinderWidth * 0.88);
-              const height = Math.min(180, Math.floor(viewfinderHeight * 0.40));
+              const width = Math.floor(viewfinderWidth * 0.96);
+              const height = Math.max(
+                110,
+                Math.min(220, Math.floor(viewfinderHeight * 0.28))
+              );
+
               return { width, height };
             },
             aspectRatio: 1.777778,
-            formatsToSupport: formats
+            disableFlip: false
           },
           onBarcodeScanned,
           function() {}
@@ -1356,14 +1371,22 @@
 
         scannerRunning = true;
         document.getElementById("stopScannerButton").disabled = false;
-        setScannerStatus("Camera active. Hold the barcode inside the box.");
+
+        try {
+          await barcodeScanner.applyVideoConstraints({
+            advanced: [
+              { focusMode: "continuous" }
+            ]
+          });
+        } catch (constraintError) {
+          console.info("Continuous autofocus is not available on this device.", constraintError);
+        }
+
+        setScannerStatus(
+          "Camera active. Hold the barcode horizontally, fill most of the box, and keep it about 10 to 20 cm away."
+        );
       } catch (error) {
         console.error(error);
-        document.getElementById("startScannerButton").disabled = false;
-        setScannerStatus(
-          "Could not open the camera. Use HTTPS, allow camera permission, or type the barcode manually.",
-          "error"
-        );
 
         if (barcodeScanner) {
           try {
@@ -1371,6 +1394,61 @@
           } catch (_) {}
           barcodeScanner = null;
         }
+
+        try {
+          const formats = [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.ITF
+          ];
+
+          barcodeScanner = new Html5Qrcode("barcodeReader", {
+            formatsToSupport: formats,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            },
+            verbose: false
+          });
+
+          await barcodeScanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 20,
+              qrbox: function(viewfinderWidth, viewfinderHeight) {
+                return {
+                  width: Math.floor(viewfinderWidth * 0.96),
+                  height: Math.max(
+                    110,
+                    Math.min(220, Math.floor(viewfinderHeight * 0.28))
+                  )
+                };
+              },
+              aspectRatio: 1.777778,
+              disableFlip: false
+            },
+            onBarcodeScanned,
+            function() {}
+          );
+
+          scannerRunning = true;
+          document.getElementById("stopScannerButton").disabled = false;
+          setScannerStatus(
+            "Camera active. Hold the barcode horizontally and let it fill most of the box."
+          );
+          return;
+        } catch (fallbackError) {
+          console.error(fallbackError);
+        }
+
+        document.getElementById("startScannerButton").disabled = false;
+        setScannerStatus(
+          "Could not scan with the camera. Check permission, clean the lens, improve lighting, or type the barcode manually.",
+          "error"
+        );
       }
     }
 
