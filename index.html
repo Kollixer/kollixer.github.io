@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#080b12" />
   <title>Calorie Tracker</title>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.12.1/dist/quagga.min.js"></script>
 
   <style>
     * {
@@ -391,8 +391,22 @@
       background: #0b1220;
     }
 
-    #barcodeReader video {
+    #barcodeReader {
+      position: relative;
+      min-height: 260px;
+    }
+
+    #barcodeReader video,
+    #barcodeReader canvas {
+      width: 100% !important;
+      height: auto !important;
       border-radius: 14px;
+    }
+
+    #barcodeReader canvas.drawingBuffer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
     }
 
     #barcodeReader button {
@@ -752,7 +766,7 @@
         <div id="barcodeReader"></div>
 
         <div id="scannerStatus" class="status-text">
-          Tap Start Camera and allow camera access.
+          Tap Start Camera. The product number is captured as soon as a valid barcode is decoded.
         </div>
 
         <div class="product-result" id="productResult">
@@ -841,15 +855,11 @@
     };
 
     let mealsByDate = JSON.parse(localStorage.getItem("mealsByDate")) || {};
-    let barcodeScanner = null;
     let scannerRunning = false;
     let currentScannedProduct = null;
     let lastScannedBarcode = "";
     let lastScanTime = 0;
-    let scanCandidates = {};
-    let scanSessionStartedAt = 0;
-    const REQUIRED_MATCHING_READS = 3;
-    const SCAN_CONFIRMATION_WINDOW_MS = 6000;
+    let quaggaDetectedHandler = null;
 
     function roundValue(value) {
       return Math.round(Number(value) * 10) / 10;
@@ -1317,166 +1327,177 @@
       status.className = `status-text ${type}`.trim();
     }
 
+    function getQuaggaReaders() {
+      return [
+        "ean_reader",
+        "ean_8_reader",
+        "upc_reader",
+        "upc_e_reader",
+        "code_128_reader"
+      ];
+    }
+
     async function startScanner() {
       if (scannerRunning) {
         return;
       }
 
-      if (typeof Html5Qrcode === "undefined") {
-        setScannerStatus("Scanner library did not load. Check your internet connection.", "error");
+      if (typeof Quagga === "undefined") {
+        setScannerStatus("Barcode scanner library did not load.", "error");
         return;
       }
 
       document.getElementById("startScannerButton").disabled = true;
       setScannerStatus("Opening camera...");
 
-      try {
-        const formats = [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.ITF
-        ];
+      quaggaDetectedHandler = async function(result) {
+        if (!result || !result.codeResult || !result.codeResult.code) {
+          return;
+        }
 
-        barcodeScanner = new Html5Qrcode("barcodeReader", {
-          formatsToSupport: formats,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          },
-          verbose: false
+        const barcode = normalizeScannedBarcode(result.codeResult.code);
+        const now = Date.now();
+
+        if (!barcode || ![8, 12, 13, 14].includes(barcode.length)) {
+          return;
+        }
+
+        if (!hasValidGs1CheckDigit(barcode)) {
+          return;
+        }
+
+        if (barcode === lastScannedBarcode && now - lastScanTime < 2500) {
+          return;
+        }
+
+        lastScannedBarcode = barcode;
+        lastScanTime = now;
+
+        document.getElementById("manualBarcode").value = barcode;
+        setScannerStatus(`Barcode ${barcode} detected. Looking up product...`, "success");
+
+        await stopScanner();
+        await lookupProduct(barcode);
+      };
+
+      try {
+        await new Promise((resolve, reject) => {
+          Quagga.init(
+            {
+              inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector("#barcodeReader"),
+                constraints: {
+                  width: { ideal: 1920 },
+                  height: { ideal: 1080 },
+                  facingMode: "environment"
+                },
+                area: {
+                  top: "20%",
+                  right: "4%",
+                  left: "4%",
+                  bottom: "20%"
+                }
+              },
+              frequency: 15,
+              locate: true,
+              numOfWorkers: Math.max(
+                1,
+                Math.min(4, navigator.hardwareConcurrency || 2)
+              ),
+              decoder: {
+                readers: getQuaggaReaders(),
+                multiple: false
+              },
+              locator: {
+                halfSample: true,
+                patchSize: "medium"
+              }
+            },
+            function(error) {
+              if (error) {
+                reject(error);
+                return;
+              }
+              resolve();
+            }
+          );
         });
 
-        await barcodeScanner.start(
-          {
-            facingMode: {
-              exact: "environment"
-            }
-          },
-          {
-            fps: 20,
-            qrbox: function(viewfinderWidth, viewfinderHeight) {
-              const width = Math.floor(viewfinderWidth * 0.96);
-              const height = Math.max(
-                110,
-                Math.min(220, Math.floor(viewfinderHeight * 0.28))
-              );
-
-              return { width, height };
-            },
-            aspectRatio: 1.777778,
-            disableFlip: false
-          },
-          onBarcodeScanned,
-          function() {}
-        );
+        Quagga.onDetected(quaggaDetectedHandler);
+        Quagga.start();
 
         scannerRunning = true;
-        scanCandidates = {};
-        scanSessionStartedAt = Date.now();
         document.getElementById("stopScannerButton").disabled = false;
 
         try {
-          await barcodeScanner.applyVideoConstraints({
-            advanced: [
-              { focusMode: "continuous" }
-            ]
-          });
-        } catch (constraintError) {
-          console.info("Continuous autofocus is not available on this device.", constraintError);
+          const track = Quagga.CameraAccess.getActiveTrack();
+
+          if (track) {
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+            const advanced = [];
+
+            if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+              advanced.push({ focusMode: "continuous" });
+            }
+
+            if (capabilities.zoom) {
+              const preferredZoom = Math.min(
+                capabilities.zoom.max,
+                Math.max(capabilities.zoom.min, 1.5)
+              );
+              advanced.push({ zoom: preferredZoom });
+            }
+
+            if (advanced.length) {
+              await track.applyConstraints({ advanced });
+            }
+          }
+        } catch (cameraTuningError) {
+          console.info("Camera tuning not supported.", cameraTuningError);
         }
 
         setScannerStatus(
-          "Camera active. Hold the barcode horizontally and steady. It must be read correctly 3 times before lookup."
+          "Camera active. Put the barcode horizontally inside the middle area."
         );
       } catch (error) {
         console.error(error);
-
-        if (barcodeScanner) {
-          try {
-            await barcodeScanner.clear();
-          } catch (_) {}
-          barcodeScanner = null;
-        }
+        document.getElementById("startScannerButton").disabled = false;
+        document.getElementById("stopScannerButton").disabled = true;
 
         try {
-          const formats = [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.ITF
-          ];
+          Quagga.stop();
+        } catch (_) {}
 
-          barcodeScanner = new Html5Qrcode("barcodeReader", {
-            formatsToSupport: formats,
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
-            },
-            verbose: false
-          });
-
-          await barcodeScanner.start(
-            { facingMode: "environment" },
-            {
-              fps: 20,
-              qrbox: function(viewfinderWidth, viewfinderHeight) {
-                return {
-                  width: Math.floor(viewfinderWidth * 0.96),
-                  height: Math.max(
-                    110,
-                    Math.min(220, Math.floor(viewfinderHeight * 0.28))
-                  )
-                };
-              },
-              aspectRatio: 1.777778,
-              disableFlip: false
-            },
-            onBarcodeScanned,
-            function() {}
-          );
-
-          scannerRunning = true;
-          document.getElementById("stopScannerButton").disabled = false;
-          setScannerStatus(
-            "Camera active. Hold the barcode horizontally and steady. It must be read correctly 3 times before lookup."
-          );
-          return;
-        } catch (fallbackError) {
-          console.error(fallbackError);
-        }
-
-        document.getElementById("startScannerButton").disabled = false;
         setScannerStatus(
-          "Could not scan with the camera. Check permission, clean the lens, improve lighting, or type the barcode manually.",
+          "Could not open the camera. Allow camera access or enter the barcode manually.",
           "error"
         );
       }
     }
 
     async function stopScanner() {
-      if (!barcodeScanner) {
-        scannerRunning = false;
-        document.getElementById("startScannerButton").disabled = false;
-        document.getElementById("stopScannerButton").disabled = true;
-        return;
-      }
+      if (typeof Quagga !== "undefined") {
+        try {
+          if (quaggaDetectedHandler) {
+            Quagga.offDetected(quaggaDetectedHandler);
+          }
+        } catch (_) {}
 
-      try {
-        if (scannerRunning) {
-          await barcodeScanner.stop();
+        try {
+          if (scannerRunning) {
+            Quagga.stop();
+          }
+        } catch (error) {
+          console.warn(error);
         }
-        await barcodeScanner.clear();
-      } catch (error) {
-        console.warn(error);
       }
 
-      barcodeScanner = null;
       scannerRunning = false;
+      quaggaDetectedHandler = null;
+      document.getElementById("barcodeReader").innerHTML = "";
       document.getElementById("startScannerButton").disabled = false;
       document.getElementById("stopScannerButton").disabled = true;
     }
@@ -1517,51 +1538,6 @@
       }
 
       return digits;
-    }
-
-    async function onBarcodeScanned(decodedText) {
-      const barcode = normalizeScannedBarcode(decodedText);
-      const now = Date.now();
-
-      if (!barcode || ![8, 12, 13, 14].includes(barcode.length)) {
-        return;
-      }
-
-      if (!hasValidGs1CheckDigit(barcode)) {
-        setScannerStatus(
-          `Unclear read rejected: ${barcode}. Keep the barcode flat and steady.`
-        );
-        return;
-      }
-
-      if (now - scanSessionStartedAt > SCAN_CONFIRMATION_WINDOW_MS) {
-        scanCandidates = {};
-        scanSessionStartedAt = now;
-      }
-
-      scanCandidates[barcode] = (scanCandidates[barcode] || 0) + 1;
-      const matches = scanCandidates[barcode];
-
-      document.getElementById("manualBarcode").value = barcode;
-      setScannerStatus(
-        `Reading barcode ${barcode}... ${matches}/${REQUIRED_MATCHING_READS} matching scans`
-      );
-
-      if (matches < REQUIRED_MATCHING_READS) {
-        return;
-      }
-
-      if (barcode === lastScannedBarcode && now - lastScanTime < 4000) {
-        return;
-      }
-
-      lastScannedBarcode = barcode;
-      lastScanTime = now;
-
-      setScannerStatus(`Confirmed barcode ${barcode}. Looking up product...`, "success");
-
-      await stopScanner();
-      await lookupProduct(barcode);
     }
 
     function lookupManualBarcode() {
@@ -1866,8 +1842,10 @@
     setInterval(render, 30000);
 
     window.addEventListener("beforeunload", function() {
-      if (scannerRunning && barcodeScanner) {
-        barcodeScanner.stop().catch(() => {});
+      if (scannerRunning && typeof Quagga !== "undefined") {
+        try {
+          Quagga.stop();
+        } catch (_) {}
       }
     });
   </script>
