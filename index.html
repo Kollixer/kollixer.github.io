@@ -10,6 +10,7 @@
   <title>Calorie Tracker</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.12.1/dist/quagga.min.js"></script>
+  <script src="https://unpkg.com/javascript-barcode-reader"></script>
 
   <style>
     * {
@@ -39,7 +40,7 @@
       font-family: Inter, Arial, sans-serif;
       background:
         radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.10), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.1), transparent 32%),
         linear-gradient(180deg, var(--bg) 0%, #0a0f19 100%);
       color: var(--text);
       overflow-x: hidden;
@@ -239,7 +240,7 @@
 
     button {
       appearance: none;
-      border: 1px solid rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 14px;
       padding: 13px 16px;
       background: linear-gradient(135deg, #2563eb, #4f46e5);
@@ -247,7 +248,7 @@
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
       transition: transform 0.12s ease, filter 0.12s ease;
       min-height: 46px;
     }
@@ -333,7 +334,7 @@
 
     .meal-item,
     .history-day {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.76), rgba(15, 23, 42, 0.80));
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.76), rgba(15, 23, 42, 0.8));
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 14px;
@@ -384,16 +385,13 @@
     }
 
     #barcodeReader {
+      position: relative;
       width: 100%;
+      min-height: 260px;
       overflow: hidden;
       border-radius: 14px;
       margin-top: 12px;
       background: #0b1220;
-    }
-
-    #barcodeReader {
-      position: relative;
-      min-height: 260px;
     }
 
     #barcodeReader video,
@@ -407,10 +405,6 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
-    }
-
-    #barcodeReader button {
-      margin: 6px;
     }
 
     .product-result {
@@ -448,6 +442,21 @@
       align-items: center;
       gap: 12px;
       margin-bottom: 12px;
+    }
+
+    .photo-preview {
+      display: none;
+      width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      margin-top: 12px;
+      border-radius: 14px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+    }
+
+    .photo-preview.active {
+      display: block;
     }
 
     .footer-note {
@@ -734,10 +743,10 @@
       <div class="top-row">
         <div>
           <h2 style="margin-bottom: 6px;">Barcode Scanner</h2>
-          <div class="subtext">Works with AH products found in Open Food Facts</div>
+          <div class="subtext">Live scan or take a photo of the barcode</div>
         </div>
 
-        <button onclick="toggleScanner()">Scan Product</button>
+        <button onclick="toggleScanner()">Open Scanner</button>
       </div>
 
       <div class="scanner-panel" id="scannerPanel">
@@ -759,14 +768,29 @@
         </div>
 
         <div class="actions">
-          <button id="startScannerButton" onclick="startScanner()">Start Camera</button>
+          <button id="startScannerButton" onclick="startScanner()">Start Live Camera</button>
           <button class="secondary" id="stopScannerButton" onclick="stopScanner()" disabled>Stop Camera</button>
+
+          <button class="secondary" onclick="document.getElementById('barcodePhotoInput').click()">
+            Take Barcode Photo
+          </button>
+
+          <input
+            type="file"
+            id="barcodePhotoInput"
+            accept="image/*"
+            capture="environment"
+            class="hidden"
+            onchange="handleBarcodePhoto(event)"
+          />
         </div>
 
         <div id="barcodeReader"></div>
 
+        <img id="barcodePhotoPreview" class="photo-preview" alt="Barcode photo preview" />
+
         <div id="scannerStatus" class="status-text">
-          Tap Start Camera. The product number is captured as soon as a valid barcode is decoded.
+          Use live scanning or take a clear close-up photo of the barcode.
         </div>
 
         <div class="product-result" id="productResult">
@@ -1430,38 +1454,7 @@
 
         scannerRunning = true;
         document.getElementById("stopScannerButton").disabled = false;
-
-        try {
-          const track = Quagga.CameraAccess.getActiveTrack();
-
-          if (track) {
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-
-            const advanced = [];
-
-            if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
-              advanced.push({ focusMode: "continuous" });
-            }
-
-            if (capabilities.zoom) {
-              const preferredZoom = Math.min(
-                capabilities.zoom.max,
-                Math.max(capabilities.zoom.min, 1.5)
-              );
-              advanced.push({ zoom: preferredZoom });
-            }
-
-            if (advanced.length) {
-              await track.applyConstraints({ advanced });
-            }
-          }
-        } catch (cameraTuningError) {
-          console.info("Camera tuning not supported.", cameraTuningError);
-        }
-
-        setScannerStatus(
-          "Camera active. Put the barcode horizontally inside the middle area."
-        );
+        setScannerStatus("Camera active. Put the barcode horizontally in the middle.");
       } catch (error) {
         console.error(error);
         document.getElementById("startScannerButton").disabled = false;
@@ -1472,7 +1465,7 @@
         } catch (_) {}
 
         setScannerStatus(
-          "Could not open the camera. Allow camera access or enter the barcode manually.",
+          "Could not open the camera. Allow camera access or use Take Barcode Photo.",
           "error"
         );
       }
@@ -1500,6 +1493,113 @@
       document.getElementById("barcodeReader").innerHTML = "";
       document.getElementById("startScannerButton").disabled = false;
       document.getElementById("stopScannerButton").disabled = true;
+    }
+
+    async function handleBarcodePhoto(event) {
+      const file = event.target.files && event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      await stopScanner();
+
+      const preview = document.getElementById("barcodePhotoPreview");
+      const objectUrl = URL.createObjectURL(file);
+
+      preview.src = objectUrl;
+      preview.classList.add("active");
+      setScannerStatus("Reading barcode from photo...");
+
+      try {
+        let code = null;
+
+        if (typeof javascriptBarcodeReader === "function") {
+          const barcodeTypes = ["ean-13", "ean-8", "upc-a", "upc-e", "code-128"];
+
+          for (const barcodeType of barcodeTypes) {
+            try {
+              code = await javascriptBarcodeReader({
+                image: preview,
+                barcode: barcodeType,
+                options: {
+                  useAdaptiveThreshold: true,
+                  singlePass: false,
+                  detectRotation: true,
+                  locateBarcode: true
+                }
+              });
+
+              if (code) {
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+
+        if (!code && typeof Quagga !== "undefined") {
+          code = await decodePhotoWithQuagga(file);
+        }
+
+        const barcode = normalizeScannedBarcode(code);
+
+        if (!barcode || ![8, 12, 13, 14].includes(barcode.length)) {
+          throw new Error("No supported barcode found");
+        }
+
+        if (!hasValidGs1CheckDigit(barcode)) {
+          throw new Error("Barcode check digit failed");
+        }
+
+        document.getElementById("manualBarcode").value = barcode;
+        setScannerStatus(`Barcode ${barcode} detected from photo. Looking up product...`, "success");
+        await lookupProduct(barcode);
+      } catch (error) {
+        console.error(error);
+        setScannerStatus(
+          "Could not read the barcode from that photo. Take a closer photo with the full barcode straight and sharp.",
+          "error"
+        );
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+        event.target.value = "";
+      }
+    }
+
+    function decodePhotoWithQuagga(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function() {
+          Quagga.decodeSingle(
+            {
+              src: reader.result,
+              numOfWorkers: 0,
+              locate: true,
+              decoder: {
+                readers: getQuaggaReaders()
+              },
+              locator: {
+                halfSample: false,
+                patchSize: "medium"
+              }
+            },
+            function(result) {
+              if (result && result.codeResult && result.codeResult.code) {
+                resolve(result.codeResult.code);
+              } else {
+                reject(new Error("Quagga could not decode photo"));
+              }
+            }
+          );
+        };
+
+        reader.onerror = function() {
+          reject(new Error("Could not read image file"));
+        };
+
+        reader.readAsDataURL(file);
+      });
     }
 
     function hasValidGs1CheckDigit(code) {
@@ -1550,7 +1650,7 @@
 
       if (!hasValidGs1CheckDigit(barcode)) {
         setScannerStatus(
-          "That barcode fails its check digit. Compare every digit with the number printed below the bars.",
+          "That barcode fails its check digit. Compare it with the number printed below the bars.",
           "error"
         );
         return;
@@ -1566,6 +1666,7 @@
           return number;
         }
       }
+
       return null;
     }
 
@@ -1614,7 +1715,7 @@
       try {
         const response = await fetch(url, {
           headers: {
-            "Accept": "application/json"
+            Accept: "application/json"
           }
         });
 
@@ -1627,7 +1728,7 @@
         if (data.status !== 1 || !data.product) {
           showManualProductEntry(barcode);
           setScannerStatus(
-            "Product not found. Enter the name and nutrition from the package label manually.",
+            "Product not found. Enter the nutrition from the package label manually.",
             "error"
           );
           return;
@@ -1664,7 +1765,7 @@
 
         if (missingNutrition) {
           setScannerStatus(
-            "Product found, but some nutrition values are missing. Copy them from the package label before adding.",
+            "Product found, but some nutrition values are missing. Copy them from the package label.",
             "error"
           );
         } else {
@@ -1683,7 +1784,7 @@
     function showManualProductEntry(barcode) {
       currentScannedProduct = {
         barcode,
-        name: `Unknown product`,
+        name: "Unknown product",
         brand: "Not found in Open Food Facts",
         image: "",
         calories: null,
@@ -1825,7 +1926,9 @@
       document.getElementById("productResult").classList.remove("active");
       document.getElementById("manualBarcode").value = "";
       document.getElementById("scannedProductImage").classList.add("hidden");
-      setScannerStatus("Product cleared. Scan another barcode or enter one manually.");
+      document.getElementById("barcodePhotoPreview").classList.remove("active");
+      document.getElementById("barcodePhotoPreview").removeAttribute("src");
+      setScannerStatus("Product cleared. Scan another barcode or take another photo.");
     }
 
     function render() {
