@@ -846,6 +846,10 @@
     let currentScannedProduct = null;
     let lastScannedBarcode = "";
     let lastScanTime = 0;
+    let scanCandidates = {};
+    let scanSessionStartedAt = 0;
+    const REQUIRED_MATCHING_READS = 3;
+    const SCAN_CONFIRMATION_WINDOW_MS = 6000;
 
     function roundValue(value) {
       return Math.round(Number(value) * 10) / 10;
@@ -1370,6 +1374,8 @@
         );
 
         scannerRunning = true;
+        scanCandidates = {};
+        scanSessionStartedAt = Date.now();
         document.getElementById("stopScannerButton").disabled = false;
 
         try {
@@ -1383,7 +1389,7 @@
         }
 
         setScannerStatus(
-          "Camera active. Hold the barcode horizontally, fill most of the box, and keep it about 10 to 20 cm away."
+          "Camera active. Hold the barcode horizontally and steady. It must be read correctly 3 times before lookup."
         );
       } catch (error) {
         console.error(error);
@@ -1437,7 +1443,7 @@
           scannerRunning = true;
           document.getElementById("stopScannerButton").disabled = false;
           setScannerStatus(
-            "Camera active. Hold the barcode horizontally and let it fill most of the box."
+            "Camera active. Hold the barcode horizontally and steady. It must be read correctly 3 times before lookup."
           );
           return;
         } catch (fallbackError) {
@@ -1475,23 +1481,84 @@
       document.getElementById("stopScannerButton").disabled = true;
     }
 
+    function hasValidGs1CheckDigit(code) {
+      if (!/^\d+$/.test(code)) {
+        return false;
+      }
+
+      if (![8, 12, 13, 14].includes(code.length)) {
+        return false;
+      }
+
+      const digits = code.split("").map(Number);
+      const suppliedCheckDigit = digits.pop();
+
+      let sum = 0;
+      let multiplyByThree = true;
+
+      for (let index = digits.length - 1; index >= 0; index--) {
+        sum += digits[index] * (multiplyByThree ? 3 : 1);
+        multiplyByThree = !multiplyByThree;
+      }
+
+      const calculatedCheckDigit = (10 - (sum % 10)) % 10;
+      return calculatedCheckDigit === suppliedCheckDigit;
+    }
+
+    function normalizeScannedBarcode(decodedText) {
+      const digits = String(decodedText || "").replace(/\D/g, "");
+
+      if (digits.length === 13 && digits.startsWith("0")) {
+        const upcVersion = digits.slice(1);
+
+        if (hasValidGs1CheckDigit(upcVersion)) {
+          return upcVersion;
+        }
+      }
+
+      return digits;
+    }
+
     async function onBarcodeScanned(decodedText) {
-      const barcode = String(decodedText).replace(/\D/g, "");
+      const barcode = normalizeScannedBarcode(decodedText);
       const now = Date.now();
 
-      if (!barcode) {
+      if (!barcode || ![8, 12, 13, 14].includes(barcode.length)) {
         return;
       }
 
-      if (barcode === lastScannedBarcode && now - lastScanTime < 3000) {
+      if (!hasValidGs1CheckDigit(barcode)) {
+        setScannerStatus(
+          `Unclear read rejected: ${barcode}. Keep the barcode flat and steady.`
+        );
+        return;
+      }
+
+      if (now - scanSessionStartedAt > SCAN_CONFIRMATION_WINDOW_MS) {
+        scanCandidates = {};
+        scanSessionStartedAt = now;
+      }
+
+      scanCandidates[barcode] = (scanCandidates[barcode] || 0) + 1;
+      const matches = scanCandidates[barcode];
+
+      document.getElementById("manualBarcode").value = barcode;
+      setScannerStatus(
+        `Reading barcode ${barcode}... ${matches}/${REQUIRED_MATCHING_READS} matching scans`
+      );
+
+      if (matches < REQUIRED_MATCHING_READS) {
+        return;
+      }
+
+      if (barcode === lastScannedBarcode && now - lastScanTime < 4000) {
         return;
       }
 
       lastScannedBarcode = barcode;
       lastScanTime = now;
 
-      document.getElementById("manualBarcode").value = barcode;
-      setScannerStatus(`Barcode ${barcode} detected. Looking up product...`);
+      setScannerStatus(`Confirmed barcode ${barcode}. Looking up product...`, "success");
 
       await stopScanner();
       await lookupProduct(barcode);
@@ -1500,8 +1567,16 @@
     function lookupManualBarcode() {
       const barcode = document.getElementById("manualBarcode").value.replace(/\D/g, "");
 
-      if (!barcode) {
-        setScannerStatus("Enter a valid barcode number.", "error");
+      if (!barcode || ![8, 12, 13, 14].includes(barcode.length)) {
+        setScannerStatus("Enter a complete 8, 12, 13, or 14 digit barcode.", "error");
+        return;
+      }
+
+      if (!hasValidGs1CheckDigit(barcode)) {
+        setScannerStatus(
+          "That barcode fails its check digit. Compare every digit with the number printed below the bars.",
+          "error"
+        );
         return;
       }
 
