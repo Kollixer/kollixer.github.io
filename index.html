@@ -11,6 +11,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.12.1/dist/quagga.min.js"></script>
   <script src="https://unpkg.com/javascript-barcode-reader"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
   <style>
     * {
@@ -377,6 +378,58 @@
       margin-top: 6px;
     }
 
+    .week-day {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.76), rgba(15, 23, 42, 0.8));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .week-day summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 800;
+    }
+
+    .week-day summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .week-day summary::after {
+      content: "⌄";
+      color: var(--muted);
+      font-size: 18px;
+      transition: transform 0.15s ease;
+    }
+
+    .week-day[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .week-day-content {
+      padding: 0 15px 15px;
+      border-top: 1px solid var(--border);
+    }
+
+    .day-total {
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 12px 0;
+    }
+
+    .week-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
     .small-delete {
       padding: 10px 12px;
       min-height: 40px;
@@ -457,6 +510,88 @@
 
     .photo-preview.active {
       display: block;
+    }
+
+    .body-entry-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .body-entry {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.76), rgba(15, 23, 42, 0.8));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 13px;
+    }
+
+    .body-entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .body-values {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .body-pill {
+      background: rgba(37, 99, 235, 0.14);
+      border: 1px solid rgba(96, 165, 250, 0.18);
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #dbeafe;
+    }
+
+    .optional-metrics {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .optional-metrics.active {
+      display: block;
+    }
+
+
+    .motivation-card {
+      text-align: center;
+    }
+
+    .quote-type {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.16);
+      border: 1px solid rgba(96, 165, 250, 0.20);
+      color: #dbeafe;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .quote-text {
+      font-size: 20px;
+      line-height: 1.5;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .quote-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
     }
 
     .footer-note {
@@ -851,8 +986,64 @@
     <div class="card">
       <div class="top-row">
         <div>
-          <h2 style="margin-bottom: 6px;">Saved Daily History</h2>
-          <div class="subtext">Stored only on this device</div>
+          <h2 style="margin-bottom: 6px;">Body Progress</h2>
+          <div class="subtext">Track weight and optional body composition</div>
+        </div>
+
+        <div class="actions" style="margin-top: 0;">
+          <button class="secondary" onclick="toggleOptionalMetrics()">Extra Metrics</button>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top: 14px;">
+        <div>
+          <label for="bodyDate">Date</label>
+          <input type="date" id="bodyDate" />
+        </div>
+
+        <div>
+          <label for="bodyWeight">Weight (kg)</label>
+          <input type="number" id="bodyWeight" min="20" max="400" step="0.1" placeholder="Example: 90.0" />
+        </div>
+      </div>
+
+      <div class="optional-metrics" id="optionalMetrics">
+        <div class="form-grid">
+          <div>
+            <label for="bodyFat">Body Fat (%)</label>
+            <input type="number" id="bodyFat" min="0" max="100" step="0.1" placeholder="Optional" />
+          </div>
+
+          <div>
+            <label for="bodyMuscle">Muscle (%)</label>
+            <input type="number" id="bodyMuscle" min="0" max="100" step="0.1" placeholder="Optional" />
+          </div>
+
+          <div>
+            <label for="bodyBone">Bone (%)</label>
+            <input type="number" id="bodyBone" min="0" max="100" step="0.1" placeholder="Optional" />
+          </div>
+
+          <div>
+            <label for="bodyWater">Body Water (%)</label>
+            <input type="number" id="bodyWater" min="0" max="100" step="0.1" placeholder="Optional" />
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="saveBodyEntry()">Save Measurement</button>
+      </div>
+
+      <div id="bodyEntryList" class="body-entry-list"></div>
+      <p id="bodyEntryEmpty" class="empty">No body measurements added yet.</p>
+    </div>
+
+    <div class="card">
+      <div class="top-row">
+        <div>
+          <h2 style="margin-bottom: 6px;">Weekly Overview</h2>
+          <div class="subtext">Current ISO week opens automatically</div>
         </div>
 
         <div class="actions" style="margin-top: 0;">
@@ -861,8 +1052,68 @@
         </div>
       </div>
 
-      <div id="historyList" class="history-list"></div>
-      <p id="historyEmptyMessage" class="empty">No saved days yet.</p>
+      <div class="form-grid" style="margin-top: 14px;">
+        <div>
+          <label for="weekSelect">Choose Week</label>
+          <select id="weekSelect" onchange="renderWeekOverview()"></select>
+        </div>
+
+        <div>
+          <label for="maintenanceInput">Estimated Maintenance</label>
+          <input
+            type="number"
+            id="maintenanceInput"
+            min="1200"
+            max="5000"
+            step="10"
+            value="2500"
+            oninput="saveMaintenanceAndRender()"
+          />
+          <div class="subtext" style="margin-top: 6px;">kcal per day</div>
+        </div>
+      </div>
+
+      <div class="overview-grid" style="margin-top: 14px;">
+        <div class="stat-box">
+          <h3>Week Calories</h3>
+          <div class="big-number" id="weekCalories">0</div>
+          <div class="subtext">logged this week</div>
+        </div>
+
+        <div class="stat-box">
+          <h3>Weekly Deficit</h3>
+          <div class="big-number" id="weekDeficit">0 kcal</div>
+          <div class="subtext">maintenance minus intake</div>
+        </div>
+
+        <div class="stat-box">
+          <h3>Estimated Loss</h3>
+          <div class="big-number" id="estimatedWeekLoss">0 kg</div>
+          <div class="subtext">rough energy estimate</div>
+        </div>
+
+        <div class="stat-box">
+          <h3>Days Logged</h3>
+          <div class="big-number" id="weekDaysLogged">0 / 7</div>
+          <div class="subtext">days with meals</div>
+        </div>
+      </div>
+
+      <div id="weekDayList" class="history-list"></div>
+    </div>
+
+    <div class="card motivation-card">
+      <div class="quote-type" id="motivationType">Motivation</div>
+      <div class="quote-text" id="motivationText">
+        Every meal is a vote for the person you are becoming.
+      </div>
+      <div class="quote-meta" id="motivationMeta">
+        Changes automatically every hour
+      </div>
+
+      <div class="actions" style="justify-content: center;">
+        <button onclick="showNewMotivationQuote(true)">New Quote</button>
+      </div>
     </div>
 
     <div class="footer-note">
@@ -879,6 +1130,7 @@
     };
 
     let mealsByDate = JSON.parse(localStorage.getItem("mealsByDate")) || {};
+    let bodyMeasurements = JSON.parse(localStorage.getItem("bodyMeasurements")) || [];
     let scannerRunning = false;
     let currentScannedProduct = null;
     let lastScannedBarcode = "";
@@ -1285,55 +1537,357 @@
       });
     }
 
-    function renderHistory() {
-      const historyList = document.getElementById("historyList");
-      const historyEmptyMessage = document.getElementById("historyEmptyMessage");
-      const sortedDates = Object.keys(mealsByDate).sort((a, b) => b.localeCompare(a));
+    function getTodayDateInputValue() {
+      return getAmsterdamNow().dateKey;
+    }
 
-      historyList.innerHTML = "";
+    function optionalNumberFromInput(id) {
+      const raw = document.getElementById(id).value.trim();
 
-      if (sortedDates.length === 0) {
-        historyEmptyMessage.style.display = "block";
+      if (raw === "") {
+        return null;
+      }
+
+      const value = Number(raw);
+      return Number.isFinite(value) ? roundValue(value) : null;
+    }
+
+    function toggleOptionalMetrics() {
+      document.getElementById("optionalMetrics").classList.toggle("active");
+    }
+
+    function saveBodyEntry() {
+      const date = document.getElementById("bodyDate").value;
+      const weight = Number(document.getElementById("bodyWeight").value);
+
+      if (!date) {
+        alert("Choose a date.");
         return;
       }
 
-      historyEmptyMessage.style.display = "none";
+      if (!Number.isFinite(weight) || weight <= 0) {
+        alert("Enter a valid weight.");
+        return;
+      }
 
-      sortedDates.forEach(dateKey => {
-        const meals = mealsByDate[dateKey];
+      const entry = {
+        id: Date.now(),
+        date,
+        weight: roundValue(weight),
+        fat: optionalNumberFromInput("bodyFat"),
+        muscle: optionalNumberFromInput("bodyMuscle"),
+        bone: optionalNumberFromInput("bodyBone"),
+        water: optionalNumberFromInput("bodyWater")
+      };
 
-        const totalCalories = meals.reduce((sum, meal) => sum + Number(meal.calories || 0), 0);
-        const totalProtein = meals.reduce((sum, meal) => sum + Number(meal.protein || 0), 0);
-        const totalFats = meals.reduce((sum, meal) => sum + Number(meal.fats || 0), 0);
-        const totalCarbs = meals.reduce((sum, meal) => sum + Number(meal.carbs || 0), 0);
+      const existingIndex = bodyMeasurements.findIndex(item => item.date === date);
 
-        const dayDiv = document.createElement("div");
-        dayDiv.className = "history-day";
+      if (existingIndex !== -1) {
+        entry.id = bodyMeasurements[existingIndex].id;
+        bodyMeasurements[existingIndex] = entry;
+      } else {
+        bodyMeasurements.push(entry);
+      }
 
-        const mealsHtml = [...meals]
-          .reverse()
-          .map(meal => `
-            <div class="meal-item" style="margin-top: 10px;">
-              ${renderMealCard(meal, dateKey)}
+      bodyMeasurements.sort((a, b) => a.date.localeCompare(b.date));
+      localStorage.setItem("bodyMeasurements", JSON.stringify(bodyMeasurements));
+
+      document.getElementById("bodyWeight").value = "";
+      document.getElementById("bodyFat").value = "";
+      document.getElementById("bodyMuscle").value = "";
+      document.getElementById("bodyBone").value = "";
+      document.getElementById("bodyWater").value = "";
+
+      renderBodyProgress();
+    }
+
+    function deleteBodyEntry(id) {
+      bodyMeasurements = bodyMeasurements.filter(entry => entry.id !== id);
+      localStorage.setItem("bodyMeasurements", JSON.stringify(bodyMeasurements));
+      renderBodyProgress();
+    }
+
+    function formatBodyDate(dateKey) {
+      const [year, month, day] = dateKey.split("-");
+      const date = new Date(`${year}-${month}-${day}T12:00:00`);
+
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function renderBodyProgress() {
+      const list = document.getElementById("bodyEntryList");
+      const empty = document.getElementById("bodyEntryEmpty");
+
+      list.innerHTML = "";
+
+      if (bodyMeasurements.length === 0) {
+        empty.style.display = "block";
+      } else {
+        empty.style.display = "none";
+      }
+
+      [...bodyMeasurements].reverse().forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "body-entry";
+
+        const extraValues = [];
+
+        if (entry.fat !== null) extraValues.push(`<span class="body-pill">Fat ${entry.fat}%</span>`);
+        if (entry.muscle !== null) extraValues.push(`<span class="body-pill">Muscle ${entry.muscle}%</span>`);
+        if (entry.bone !== null) extraValues.push(`<span class="body-pill">Bone ${entry.bone}%</span>`);
+        if (entry.water !== null) extraValues.push(`<span class="body-pill">Water ${entry.water}%</span>`);
+
+        div.innerHTML = `
+          <div class="body-entry-top">
+            <div>
+              <div class="meal-name">${entry.weight} kg</div>
+              <div class="meal-time">${formatBodyDate(entry.date)}</div>
             </div>
-          `)
-          .join("");
 
-        dayDiv.innerHTML = `
-          <div class="history-date">${formatDateKeyToPretty(dateKey)}</div>
-
-          <div class="history-summary">
-            <strong>Total:</strong> ${roundValue(totalCalories)} kcal |
-            Protein: ${roundValue(totalProtein)}g |
-            Fats: ${roundValue(totalFats)}g |
-            Carbs: ${roundValue(totalCarbs)}g
+            <button class="danger small-delete" onclick="deleteBodyEntry(${entry.id})">
+              Delete
+            </button>
           </div>
 
-          ${mealsHtml}
+          ${extraValues.length ? `<div class="body-values">${extraValues.join("")}</div>` : ""}
         `;
 
-        historyList.appendChild(dayDiv);
+        list.appendChild(div);
       });
+
+    }
+
+    function getISOWeekInfo(date = new Date()) {
+      const utcDate = new Date(Date.UTC(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      ));
+
+      const dayNumber = utcDate.getUTCDay() || 7;
+      utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNumber);
+
+      const isoYear = utcDate.getUTCFullYear();
+      const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+      const week = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+
+      return { year: isoYear, week };
+    }
+
+    function getWeeksInISOYear(year) {
+      const dec28 = new Date(Date.UTC(year, 11, 28));
+      return getISOWeekInfo(new Date(
+        dec28.getUTCFullYear(),
+        dec28.getUTCMonth(),
+        dec28.getUTCDate()
+      )).week;
+    }
+
+    function getDateOfISOWeek(year, week, isoDay) {
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const jan4Day = jan4.getUTCDay() || 7;
+      const monday = new Date(jan4);
+      monday.setUTCDate(jan4.getUTCDate() - jan4Day + 1 + (week - 1) * 7);
+
+      const result = new Date(monday);
+      result.setUTCDate(monday.getUTCDate() + isoDay - 1);
+      return result;
+    }
+
+    function dateToKeyUTC(date) {
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(date.getUTCDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function prettyDateUTC(date) {
+      return new Intl.DateTimeFormat("en-GB", {
+        timeZone: "UTC",
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function initializeWeekSelector() {
+      const select = document.getElementById("weekSelect");
+      const current = getISOWeekInfo(new Date());
+      const weeksInYear = getWeeksInISOYear(current.year);
+
+      select.innerHTML = "";
+
+      for (let week = 1; week <= weeksInYear; week++) {
+        const option = document.createElement("option");
+        option.value = `${current.year}-W${String(week).padStart(2, "0")}`;
+
+        const monday = getDateOfISOWeek(current.year, week, 1);
+        const sunday = getDateOfISOWeek(current.year, week, 7);
+
+        option.textContent =
+          `Week ${week} · ${prettyDateUTC(monday)} to ${prettyDateUTC(sunday)}`;
+
+        if (week === current.week) {
+          option.selected = true;
+        }
+
+        select.appendChild(option);
+      }
+
+      const savedMaintenance = Number(localStorage.getItem("maintenanceCalories"));
+
+      if (Number.isFinite(savedMaintenance) && savedMaintenance >= 1200) {
+        document.getElementById("maintenanceInput").value = savedMaintenance;
+      }
+    }
+
+    function saveMaintenanceAndRender() {
+      const input = document.getElementById("maintenanceInput");
+      const maintenance = Number(input.value);
+
+      if (Number.isFinite(maintenance) && maintenance >= 1200) {
+        localStorage.setItem("maintenanceCalories", String(maintenance));
+      }
+
+      renderWeekOverview();
+    }
+
+    function renderWeekOverview() {
+      const select = document.getElementById("weekSelect");
+
+      if (!select || !select.value) {
+        return;
+      }
+
+      const match = select.value.match(/^(\d{4})-W(\d{2})$/);
+
+      if (!match) {
+        return;
+      }
+
+      const year = Number(match[1]);
+      const week = Number(match[2]);
+      const maintenance =
+        Number(document.getElementById("maintenanceInput").value) || 2500;
+
+      const dayNames = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ];
+
+      const container = document.getElementById("weekDayList");
+      container.innerHTML = "";
+
+      let totalCalories = 0;
+      let daysLogged = 0;
+
+      for (let isoDay = 1; isoDay <= 7; isoDay++) {
+        const date = getDateOfISOWeek(year, week, isoDay);
+        const dateKey = dateToKeyUTC(date);
+        const meals = mealsByDate[dateKey] || [];
+
+        const dayCalories = meals.reduce(
+          (sum, meal) => sum + Number(meal.calories || 0),
+          0
+        );
+        const dayProtein = meals.reduce(
+          (sum, meal) => sum + Number(meal.protein || 0),
+          0
+        );
+        const dayFats = meals.reduce(
+          (sum, meal) => sum + Number(meal.fats || 0),
+          0
+        );
+        const dayCarbs = meals.reduce(
+          (sum, meal) => sum + Number(meal.carbs || 0),
+          0
+        );
+
+        totalCalories += dayCalories;
+
+        if (meals.length > 0) {
+          daysLogged++;
+        }
+
+        const details = document.createElement("details");
+        details.className = "week-day";
+
+        const mealsHtml = meals.length
+          ? [...meals]
+              .reverse()
+              .map(meal => `
+                <div class="meal-item" style="margin-top: 10px;">
+                  ${renderMealCard(meal, dateKey)}
+                </div>
+              `)
+              .join("")
+          : `<p class="empty">No meals added.</p>`;
+
+        details.innerHTML = `
+          <summary>
+            <span>${dayNames[isoDay - 1]} · ${prettyDateUTC(date)}</span>
+            <span class="subtext">${roundValue(dayCalories)} kcal</span>
+          </summary>
+
+          <div class="week-day-content">
+            <div class="day-total">
+              <strong>Day total:</strong>
+              ${roundValue(dayCalories)} kcal ·
+              ${roundValue(dayProtein)}g protein ·
+              ${roundValue(dayFats)}g fats ·
+              ${roundValue(dayCarbs)}g carbs
+            </div>
+
+            ${mealsHtml}
+          </div>
+        `;
+
+        container.appendChild(details);
+      }
+
+      const weeklyMaintenance = maintenance * 7;
+      const deficit = weeklyMaintenance - totalCalories;
+      const estimatedKg = deficit / 7700;
+
+      document.getElementById("weekCalories").textContent =
+        `${roundValue(totalCalories)} kcal`;
+      document.getElementById("weekDeficit").textContent =
+        `${roundValue(deficit)} kcal`;
+      document.getElementById("weekDaysLogged").textContent =
+        `${daysLogged} / 7`;
+
+      const lossElement = document.getElementById("estimatedWeekLoss");
+      lossElement.textContent =
+        `${estimatedKg >= 0 ? "" : "+"}${Math.abs(estimatedKg).toFixed(2)} kg`;
+
+      if (deficit >= 0) {
+        lossElement.className = "big-number green";
+      } else {
+        lossElement.className = "big-number red";
+      }
+
+      const existingNote = document.getElementById("weekEstimateNote");
+
+      if (existingNote) {
+        existingNote.remove();
+      }
+
+      const note = document.createElement("div");
+      note.id = "weekEstimateNote";
+      note.className = "week-note";
+      note.textContent =
+        "This is only a mathematical estimate using 7,700 kcal per kg. Water, growth, digestion, exercise and logging accuracy can make real scale changes very different.";
+
+      container.appendChild(note);
     }
 
     function toggleScanner() {
@@ -1939,18 +2493,746 @@
       setScannerStatus("Product cleared. Scan another barcode or take another photo.");
     }
 
+    const MOTIVATION_QUOTES = [
+  {
+    "type": "Motivation",
+    "text": "Every meal is a vote for the person you are becoming."
+  },
+  {
+    "type": "Motivation",
+    "text": "You do not need a perfect day. You need enough good decisions."
+  },
+  {
+    "type": "Motivation",
+    "text": "The body you want is built in ordinary moments."
+  },
+  {
+    "type": "Motivation",
+    "text": "Keep going long enough for your effort to become visible."
+  },
+  {
+    "type": "Motivation",
+    "text": "Small choices become big changes when repeated."
+  },
+  {
+    "type": "Motivation",
+    "text": "Your future self is built by what you do today."
+  },
+  {
+    "type": "Motivation",
+    "text": "Progress is quiet before it becomes obvious."
+  },
+  {
+    "type": "Motivation",
+    "text": "You are not stuck. You are still becoming."
+  },
+  {
+    "type": "Motivation",
+    "text": "Show up even when the day feels average."
+  },
+  {
+    "type": "Motivation",
+    "text": "The hardest days often matter the most."
+  },
+  {
+    "type": "Motivation",
+    "text": "You are closer than you think if you keep moving."
+  },
+  {
+    "type": "Motivation",
+    "text": "Consistency turns effort into identity."
+  },
+  {
+    "type": "Motivation",
+    "text": "Your habits are shaping your reflection."
+  },
+  {
+    "type": "Motivation",
+    "text": "Build the version of you that you would respect."
+  },
+  {
+    "type": "Motivation",
+    "text": "Do it for the confidence you cannot fake."
+  },
+  {
+    "type": "Motivation",
+    "text": "One strong decision can rescue a weak day."
+  },
+  {
+    "type": "Motivation",
+    "text": "There is no wasted effort when you learn from it."
+  },
+  {
+    "type": "Motivation",
+    "text": "Your pace can be slow and still be forward."
+  },
+  {
+    "type": "Motivation",
+    "text": "You are allowed to be proud before you are finished."
+  },
+  {
+    "type": "Motivation",
+    "text": "Keep promises to yourself, especially the small ones."
+  },
+  {
+    "type": "Discipline",
+    "text": "Motivation starts the work. Discipline finishes it."
+  },
+  {
+    "type": "Discipline",
+    "text": "Do not negotiate with the plan every time you feel tired."
+  },
+  {
+    "type": "Discipline",
+    "text": "Discipline is choosing your goal over your mood."
+  },
+  {
+    "type": "Discipline",
+    "text": "You do not rise to your intentions. You fall to your habits."
+  },
+  {
+    "type": "Discipline",
+    "text": "The boring days are where real progress is made."
+  },
+  {
+    "type": "Discipline",
+    "text": "Your routine should work even when motivation does not."
+  },
+  {
+    "type": "Discipline",
+    "text": "The goal is not intensity once. It is consistency often."
+  },
+  {
+    "type": "Discipline",
+    "text": "Keep the standard even when nobody is watching."
+  },
+  {
+    "type": "Discipline",
+    "text": "A plan only works when you follow it on normal days."
+  },
+  {
+    "type": "Discipline",
+    "text": "You do not need to feel ready to act ready."
+  },
+  {
+    "type": "Discipline",
+    "text": "Consistency is self respect repeated."
+  },
+  {
+    "type": "Discipline",
+    "text": "You can be tired and still keep your word."
+  },
+  {
+    "type": "Discipline",
+    "text": "Your excuses are strongest right before your progress."
+  },
+  {
+    "type": "Discipline",
+    "text": "Stop waiting for the perfect week."
+  },
+  {
+    "type": "Discipline",
+    "text": "The decision gets easier after you make it enough times."
+  },
+  {
+    "type": "Discipline",
+    "text": "A weak moment does not need to become a weak day."
+  },
+  {
+    "type": "Discipline",
+    "text": "Do what the goal requires, not what the mood requests."
+  },
+  {
+    "type": "Discipline",
+    "text": "Discipline protects you from temporary feelings."
+  },
+  {
+    "type": "Discipline",
+    "text": "Repeating the basics beats chasing new tricks."
+  },
+  {
+    "type": "Discipline",
+    "text": "Keep the routine simple enough to survive bad days."
+  },
+  {
+    "type": "Philosophy",
+    "text": "You become what you repeatedly choose."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The mirror is only a delayed reflection of your habits."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Change begins when comfort stops being the priority."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The body is shaped by time, but time follows behavior."
+  },
+  {
+    "type": "Philosophy",
+    "text": "A better life is usually built through quieter choices."
+  },
+  {
+    "type": "Philosophy",
+    "text": "You cannot hate yourself into becoming someone you love."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Self control is freedom from short term impulses."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Patience is not waiting. It is continuing without proof."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Identity changes before appearance does."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The person you want to be is hidden inside repeated action."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Comfort preserves the present. Effort creates the future."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Your body remembers the habits your mind repeats."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Progress is the visible form of patience."
+  },
+  {
+    "type": "Philosophy",
+    "text": "You are always becoming something. Choose deliberately."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The strongest transformation is the one you can maintain."
+  },
+  {
+    "type": "Philosophy",
+    "text": "A goal without a system is only a wish with good branding."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The future is built in moments that feel too small to matter."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Mastery begins when you stop needing every day to feel exciting."
+  },
+  {
+    "type": "Philosophy",
+    "text": "Your environment shapes your choices more than your willpower does."
+  },
+  {
+    "type": "Philosophy",
+    "text": "The real transformation is learning to trust yourself again."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Nobody accidentally gets lean."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "The mirror does not care about excuses."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "A calorie does not know it is the weekend."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Wanting results is not the same as earning them."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "You cannot outtrain a diet you refuse to control."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "One bad meal is not the problem. Repeating it is."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "You are not too busy. You are choosing other priorities."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "If nothing changes, nothing changes."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Results are slow because your habits were built slowly too."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "The body you want will cost you some comfort."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Your goal does not care how motivated you feel."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "You cannot keep every habit and expect a different body."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Most people quit because progress is not dramatic enough."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "You do not need another plan. You need to follow one."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "If you keep restarting, you never get to continue."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Eating less once does not undo overeating all week."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Progress requires honesty about what you actually eat."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "The scale is not mean. It is information."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "You cannot build confidence while constantly breaking promises to yourself."
+  },
+  {
+    "type": "Harsh Truth",
+    "text": "Your comfort zone is expensive."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Protein at every meal makes the whole day easier."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Plan your meals before hunger starts making decisions."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "High volume foods can make a calorie deficit feel easier."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Drink water before assuming you need a snack."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Most hunger becomes easier when meals include protein and fiber."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Keep easy healthy foods visible and ready."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "A simple meal you repeat is better than a perfect meal you never make."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Do not drink calories by accident."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Leave room for foods you enjoy so the plan survives."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Track oils and sauces. They count too."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Do not confuse thirst, boredom, and hunger."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Build meals around lean protein first."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "The best diet is one you can repeat without hating your life."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Keep emergency protein options available."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Eat slower. Fullness needs time to catch up."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Pre portion snacks instead of eating from the bag."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Vegetables make meals bigger without making calories explode."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Do not save all your calories until late at night unless it genuinely works for you."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "A flexible plan usually lasts longer than an extreme one."
+  },
+  {
+    "type": "Nutrition Tip",
+    "text": "Accuracy matters more with calorie dense foods."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Progressive overload matters more than random hard workouts."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Train with control, not just momentum."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Good form keeps progress moving."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Muscle grows during recovery, not only during training."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Track your lifts so improvement is measurable."
+  },
+  {
+    "type": "Training Tip",
+    "text": "You do not need more exercises. You need better effort."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Sleep is part of the program."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Train close enough to failure to make the set matter."
+  },
+  {
+    "type": "Training Tip",
+    "text": "A shorter workout done consistently beats a perfect plan skipped often."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Do not rush reps you want your muscles to feel."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Rest long enough to perform well again."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Add weight only when the movement still looks clean."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Walking supports fat loss without destroying recovery."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Strength is one of the best signs that muscle is being maintained."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Do not train through sharp pain."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Warm up enough to perform, not enough to get tired."
+  },
+  {
+    "type": "Training Tip",
+    "text": "You do not need soreness to prove the workout worked."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Your muscles respond to tension, not ego."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Repeat effective exercises long enough to improve them."
+  },
+  {
+    "type": "Training Tip",
+    "text": "Recovery days are productive when they help the next session."
+  },
+  {
+    "type": "Mindset",
+    "text": "You are not behind. You are building from where you are."
+  },
+  {
+    "type": "Mindset",
+    "text": "A setback is information, not identity."
+  },
+  {
+    "type": "Mindset",
+    "text": "Do not turn one mistake into permission to quit."
+  },
+  {
+    "type": "Mindset",
+    "text": "You can dislike the process and still respect the goal."
+  },
+  {
+    "type": "Mindset",
+    "text": "Your worth is not measured by a single weigh in."
+  },
+  {
+    "type": "Mindset",
+    "text": "Focus on direction, not perfection."
+  },
+  {
+    "type": "Mindset",
+    "text": "Confidence grows when your actions match your intentions."
+  },
+  {
+    "type": "Mindset",
+    "text": "Be patient with your body and strict with your habits."
+  },
+  {
+    "type": "Mindset",
+    "text": "You do not need punishment. You need structure."
+  },
+  {
+    "type": "Mindset",
+    "text": "The plan should support your life, not consume it."
+  },
+  {
+    "type": "Mindset",
+    "text": "You can be ambitious without being cruel to yourself."
+  },
+  {
+    "type": "Mindset",
+    "text": "One number cannot describe your entire progress."
+  },
+  {
+    "type": "Mindset",
+    "text": "Do not chase fast results at the cost of lasting ones."
+  },
+  {
+    "type": "Mindset",
+    "text": "Your body changes better when your mind is not at war with it."
+  },
+  {
+    "type": "Mindset",
+    "text": "Use the scale as feedback, not a verdict."
+  },
+  {
+    "type": "Mindset",
+    "text": "You are allowed to adjust the plan without abandoning the goal."
+  },
+  {
+    "type": "Mindset",
+    "text": "Progress feels easier when the process becomes normal."
+  },
+  {
+    "type": "Mindset",
+    "text": "Consistency is easier when shame is removed."
+  },
+  {
+    "type": "Mindset",
+    "text": "Celebrate proof of change before the final result arrives."
+  },
+  {
+    "type": "Mindset",
+    "text": "Build habits you can still respect on a difficult week."
+  },
+  {
+    "type": "Consistency",
+    "text": "A year of average effort beats a week of obsession."
+  },
+  {
+    "type": "Consistency",
+    "text": "Do not chase perfect days. Build repeatable weeks."
+  },
+  {
+    "type": "Consistency",
+    "text": "The goal is to make good choices feel normal."
+  },
+  {
+    "type": "Consistency",
+    "text": "Your average matters more than your best day."
+  },
+  {
+    "type": "Consistency",
+    "text": "Progress loves routines that look boring."
+  },
+  {
+    "type": "Consistency",
+    "text": "One meal does not define you. Your pattern does."
+  },
+  {
+    "type": "Consistency",
+    "text": "Keep the streak alive with the smallest useful action."
+  },
+  {
+    "type": "Consistency",
+    "text": "Long term results are built from short term repetitions."
+  },
+  {
+    "type": "Consistency",
+    "text": "The plan should still work when life gets messy."
+  },
+  {
+    "type": "Consistency",
+    "text": "Good enough repeated is better than perfect attempted."
+  },
+  {
+    "type": "Consistency",
+    "text": "You do not need to win every day. Just avoid quitting."
+  },
+  {
+    "type": "Consistency",
+    "text": "The body changes when your normal changes."
+  },
+  {
+    "type": "Consistency",
+    "text": "A sustainable pace is still a serious pace."
+  },
+  {
+    "type": "Consistency",
+    "text": "Your weekly average tells the real story."
+  },
+  {
+    "type": "Consistency",
+    "text": "The routine becomes easier after it becomes familiar."
+  },
+  {
+    "type": "Consistency",
+    "text": "Do not let impatience destroy a plan that is working."
+  },
+  {
+    "type": "Consistency",
+    "text": "What you repeat becomes what you resemble."
+  },
+  {
+    "type": "Consistency",
+    "text": "The best plan is the one you can keep during stress."
+  },
+  {
+    "type": "Consistency",
+    "text": "Results often appear after the effort starts feeling normal."
+  },
+  {
+    "type": "Consistency",
+    "text": "Stay consistent long enough to become undeniable."
+  }
+];
+
+    function getCurrentHourKey() {
+      const now = new Date();
+      return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${now.getHours()}`;
+    }
+
+    function hashString(value) {
+      let hash = 0;
+
+      for (let index = 0; index < value.length; index++) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(index);
+        hash |= 0;
+      }
+
+      return Math.abs(hash);
+    }
+
+    function getHourlyQuoteIndex() {
+      return hashString(getCurrentHourKey()) % MOTIVATION_QUOTES.length;
+    }
+
+    function showMotivationQuoteByIndex(index, manual = false) {
+      const safeIndex =
+        ((index % MOTIVATION_QUOTES.length) + MOTIVATION_QUOTES.length) %
+        MOTIVATION_QUOTES.length;
+
+      const quote = MOTIVATION_QUOTES[safeIndex];
+
+      document.getElementById("motivationType").textContent = quote.type;
+      document.getElementById("motivationText").textContent = quote.text;
+      document.getElementById("motivationMeta").textContent =
+        manual
+          ? "Manually selected quote"
+          : "Changes automatically every hour";
+
+      localStorage.setItem("motivationQuoteIndex", String(safeIndex));
+      localStorage.setItem("motivationQuoteHour", getCurrentHourKey());
+      localStorage.setItem("motivationQuoteManual", manual ? "1" : "0");
+    }
+
+    function initializeMotivationQuote() {
+      const currentHour = getCurrentHourKey();
+      const savedHour = localStorage.getItem("motivationQuoteHour");
+      const savedIndex = Number(localStorage.getItem("motivationQuoteIndex"));
+      const wasManual = localStorage.getItem("motivationQuoteManual") === "1";
+
+      if (
+        savedHour === currentHour &&
+        Number.isInteger(savedIndex) &&
+        savedIndex >= 0 &&
+        savedIndex < MOTIVATION_QUOTES.length
+      ) {
+        showMotivationQuoteByIndex(savedIndex, wasManual);
+        return;
+      }
+
+      showMotivationQuoteByIndex(getHourlyQuoteIndex(), false);
+    }
+
+    function showNewMotivationQuote(manual = true) {
+      const currentText = document.getElementById("motivationText").textContent;
+      let nextIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+
+      if (MOTIVATION_QUOTES.length > 1) {
+        while (MOTIVATION_QUOTES[nextIndex].text === currentText) {
+          nextIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+        }
+      }
+
+      showMotivationQuoteByIndex(nextIndex, manual);
+    }
+
+    function checkHourlyMotivationQuote() {
+      const savedHour = localStorage.getItem("motivationQuoteHour");
+      const currentHour = getCurrentHourKey();
+
+      if (savedHour !== currentHour) {
+        showMotivationQuoteByIndex(getHourlyQuoteIndex(), false);
+      }
+    }
+
     function render() {
       updateClock();
       renderToday();
-      renderHistory();
+      renderBodyProgress();
+      renderWeekOverview();
       updatePreview();
     }
 
     updateEntryMode();
+    initializeWeekSelector();
+    document.getElementById("bodyDate").value = getTodayDateInputValue();
+    initializeMotivationQuote();
     render();
 
     setInterval(updateClock, 1000);
     setInterval(render, 30000);
+    setInterval(checkHourlyMotivationQuote, 60000);
 
     window.addEventListener("beforeunload", function() {
       if (scannerRunning && typeof Quagga !== "undefined") {
