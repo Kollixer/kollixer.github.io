@@ -396,6 +396,53 @@
       font-weight: 800;
     }
 
+
+    .week-day-summary-grid {
+      display: grid;
+      grid-template-columns: minmax(96px, 1.2fr) minmax(74px, 0.8fr) minmax(86px, auto);
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .week-day-name {
+      font-weight: 800;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .week-day-date {
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .week-day-kcal {
+      white-space: nowrap;
+      text-align: right;
+      font-weight: 800;
+      color: #cbd5e1;
+    }
+
+    @media (max-width: 430px) {
+      .week-day summary {
+        padding: 14px 12px;
+      }
+
+      .week-day-summary-grid {
+        grid-template-columns: minmax(82px, 1.1fr) minmax(62px, 0.75fr) minmax(78px, auto);
+        gap: 8px;
+      }
+
+      .week-day-name,
+      .week-day-date,
+      .week-day-kcal {
+        font-size: 13px;
+      }
+    }
+
     .week-day summary::-webkit-details-marker {
       display: none;
     }
@@ -634,7 +681,364 @@
         font-size: 28px;
       }
     }
+  
+    .goal-date-result {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(28, 39, 64, 0.82), rgba(16, 26, 45, 0.86));
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .goal-date-result strong {
+      color: #ffffff;
+    }
+
+    .goal-date-main {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
   </style>
+
+  <style id="ui-polish">
+    :root {
+      --smooth-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .app-shell {
+      max-width: 1080px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      animation: appEnter 420ms var(--smooth-ease) both;
+    }
+
+    @keyframes appEnter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    header {
+      border-radius: 26px;
+      padding: 28px 20px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.38);
+    }
+
+    .card {
+      border-radius: 22px;
+      padding: 18px;
+      margin-bottom: 16px;
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.91));
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+      transition:
+        transform 220ms var(--smooth-ease),
+        border-color 220ms ease,
+        box-shadow 220ms var(--smooth-ease);
+    }
+
+    .stat-box,
+    .macro-pill,
+    .mode-box,
+    .calc-preview,
+    .progress-card,
+    .date-box,
+    .product-result {
+      border-radius: 17px;
+      transition:
+        transform 170ms var(--smooth-ease),
+        border-color 170ms ease;
+    }
+
+    button {
+      border-radius: 15px;
+      transition:
+        transform 150ms var(--smooth-ease),
+        filter 150ms ease,
+        box-shadow 150ms ease,
+        opacity 150ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    input,
+    select {
+      border-radius: 15px;
+      background: rgba(11, 18, 32, 0.92);
+      transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms var(--smooth-ease);
+    }
+
+    input:focus,
+    select:focus {
+      transform: translateY(-1px);
+    }
+
+    .progress-fill {
+      transition: width 520ms var(--smooth-ease);
+    }
+
+    .meal-form.active,
+    .scanner-panel.active,
+    .optional-metrics.active {
+      animation: sectionOpen 260ms var(--smooth-ease) both;
+    }
+
+    @keyframes sectionOpen {
+      from { opacity: 0; transform: translateY(-7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .meal-item,
+    .history-day,
+    .body-entry {
+      animation: itemEnter 260ms var(--smooth-ease) both;
+      transition:
+        transform 170ms var(--smooth-ease),
+        border-color 170ms ease,
+        opacity 170ms ease;
+    }
+
+    @keyframes itemEnter {
+      from { opacity: 0; transform: translateY(8px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .week-day {
+      transition:
+        transform 170ms var(--smooth-ease),
+        border-color 170ms ease;
+    }
+
+    .week-day[open] {
+      border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    .week-day-content {
+      animation: sectionOpen 220ms var(--smooth-ease) both;
+    }
+
+    .quote-text.quote-changing {
+      animation: quoteSwap 320ms var(--smooth-ease) both;
+    }
+
+    @keyframes quoteSwap {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (hover: hover) {
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(148, 163, 184, 0.24);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+      }
+
+      .stat-box:hover,
+      .macro-pill:hover,
+      .progress-card:hover,
+      .date-box:hover,
+      .meal-item:hover,
+      .history-day:hover,
+      .body-entry:hover,
+      .week-day:hover {
+        transform: translateY(-1px);
+        border-color: rgba(96, 165, 250, 0.26);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .card {
+        padding: 15px;
+        border-radius: 20px;
+      }
+
+      .top-row {
+        align-items: stretch;
+      }
+
+      .date-box {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .actions {
+        gap: 8px;
+      }
+
+      .actions button {
+        flex: 1 1 auto;
+      }
+
+      .quote-text {
+        font-size: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+
+
+  <style id="theme-refresh">
+    :root {
+      --bg: #09111f;
+      --bg-soft: #0d1728;
+      --card: rgba(15, 23, 42, 0.9);
+      --card-2: rgba(20, 30, 52, 0.92);
+      --border: rgba(148, 163, 184, 0.14);
+      --text: #f8fafc;
+      --muted: #9aa7bd;
+      --accent: #7c8cff;
+      --accent-2: #a78bfa;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #fb7185;
+    }
+
+    html,
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(124, 140, 255, 0.12), transparent 34%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.10), transparent 28%),
+        linear-gradient(180deg, #09111f 0%, #0b1322 42%, #0a1220 100%);
+      color: var(--text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 70%);
+      opacity: 0.45;
+    }
+
+    header {
+      background:
+        radial-gradient(circle at top left, rgba(124,140,255,0.20), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(96,165,250,0.14), transparent 60%),
+        linear-gradient(160deg, #172554 0%, #1e3a8a 38%, #1e40af 72%, #312e81 100%);
+      border-color: rgba(124, 140, 255, 0.16);
+      overflow: hidden;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(180deg,
+        rgba(255,255,255,0.06) 0%,
+        rgba(255,255,255,0.02) 40%,
+        transparent 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .card {
+      background:
+        linear-gradient(180deg, rgba(20, 30, 52, 0.92), rgba(13, 23, 40, 0.90));
+      border-color: rgba(148, 163, 184, 0.13);
+    }
+
+    .stat-box,
+    .macro-pill,
+    .progress-card,
+    .date-box,
+    .mode-box,
+    .calc-preview,
+    .product-result,
+    .meal-item,
+    .history-day,
+    .body-entry,
+    .week-day {
+      background:
+        linear-gradient(180deg, rgba(28, 39, 64, 0.82), rgba(16, 26, 45, 0.86));
+      border-color: rgba(148, 163, 184, 0.12);
+    }
+
+    button.primary,
+    .primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      box-shadow: 0 10px 24px rgba(124, 140, 255, 0.24);
+    }
+
+    button.secondary,
+    .secondary {
+      background: rgba(124, 140, 255, 0.10);
+      border-color: rgba(124, 140, 255, 0.18);
+    }
+
+    input,
+    select {
+      background: rgba(8, 15, 28, 0.88);
+      border-color: rgba(148, 163, 184, 0.14);
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(124, 140, 255, 0.54);
+      box-shadow: 0 0 0 4px rgba(124, 140, 255, 0.10);
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .macro-pill strong,
+    .stat-box strong,
+    .progress-card strong {
+      color: #ffffff;
+    }
+
+    .muted,
+    .subtitle,
+    .small,
+    .quote-meta {
+      color: var(--muted);
+    }
+
+    ::selection {
+      background: rgba(124, 140, 255, 0.35);
+      color: white;
+    }
+  </style>
+
 </head>
 
 <body>
@@ -1037,6 +1441,34 @@
 
       <div id="bodyEntryList" class="body-entry-list"></div>
       <p id="bodyEntryEmpty" class="empty">No body measurements added yet.</p>
+    </div>
+
+    <div class="card">
+      <div class="top-row">
+        <div>
+          <h2 style="margin-bottom: 6px;">Goal Date Calculator</h2>
+          <div class="subtext">Uses your saved weight history to estimate when you may reach a target weight</div>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top: 14px;">
+        <div>
+          <label for="goalWeightInput">Target Weight (kg)</label>
+          <input
+            type="number"
+            id="goalWeightInput"
+            min="20"
+            max="400"
+            step="0.1"
+            placeholder="Example: 70"
+            oninput="calculateGoalDate()"
+          />
+        </div>
+      </div>
+
+      <div class="goal-date-result" id="goalDateResult">
+        Add at least two weight measurements on different dates to calculate your average pace.
+      </div>
     </div>
 
     <div class="card">
@@ -1832,10 +2264,19 @@
               .join("")
           : `<p class="empty">No meals added.</p>`;
 
+        const shortDate = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "UTC",
+          day: "numeric",
+          month: "short"
+        }).format(date);
+
         details.innerHTML = `
           <summary>
-            <span>${dayNames[isoDay - 1]} · ${prettyDateUTC(date)}</span>
-            <span class="subtext">${roundValue(dayCalories)} kcal</span>
+            <div class="week-day-summary-grid">
+              <span class="week-day-name">${dayNames[isoDay - 1]}</span>
+              <span class="week-day-date">${shortDate}</span>
+              <span class="week-day-kcal">${roundValue(dayCalories)} kcal</span>
+            </div>
           </summary>
 
           <div class="week-day-content">
@@ -3216,10 +3657,106 @@
       }
     }
 
+
+    function calculateGoalDate() {
+      const resultBox = document.getElementById("goalDateResult");
+
+      if (!resultBox) {
+        return;
+      }
+
+      const targetWeight = Number(document.getElementById("goalWeightInput").value);
+      const validEntries = bodyMeasurements
+        .filter(entry =>
+          entry &&
+          entry.date &&
+          Number.isFinite(Number(entry.weight))
+        )
+        .map(entry => ({
+          date: entry.date,
+          weight: Number(entry.weight)
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (validEntries.length < 2) {
+        resultBox.innerHTML =
+          "Add at least two weight measurements on different dates to calculate your average pace.";
+        return;
+      }
+
+      const first = validEntries[0];
+      const latest = validEntries[validEntries.length - 1];
+
+      const firstDate = new Date(`${first.date}T12:00:00`);
+      const latestDate = new Date(`${latest.date}T12:00:00`);
+      const elapsedDays = Math.round((latestDate - firstDate) / 86400000);
+
+      if (elapsedDays <= 0) {
+        resultBox.innerHTML =
+          "Your weight measurements need to be saved on different dates.";
+        return;
+      }
+
+      const totalChange = first.weight - latest.weight;
+      const dailyLoss = totalChange / elapsedDays;
+      const weeklyLoss = dailyLoss * 7;
+
+      if (!Number.isFinite(targetWeight) || targetWeight <= 0) {
+        resultBox.innerHTML = `
+          <div class="goal-date-main">${weeklyLoss > 0 ? roundValue(weeklyLoss) : 0} kg per week</div>
+          <div class="subtext">
+            Your current average based on ${validEntries.length} measurements over ${elapsedDays} days.
+            Enter a target weight to predict a date.
+          </div>
+        `;
+        return;
+      }
+
+      if (targetWeight >= latest.weight) {
+        resultBox.innerHTML = `
+          <div class="goal-date-main">You are already at or below this target.</div>
+          <div class="subtext">Latest saved weight: ${roundValue(latest.weight)} kg.</div>
+        `;
+        return;
+      }
+
+      if (dailyLoss <= 0) {
+        resultBox.innerHTML = `
+          <div class="goal-date-main">No goal date can be estimated yet.</div>
+          <div class="subtext">
+            Your saved measurements do not currently show an overall downward weight trend.
+          </div>
+        `;
+        return;
+      }
+
+      const remainingKg = latest.weight - targetWeight;
+      const daysNeeded = Math.ceil(remainingKg / dailyLoss);
+      const predictedDate = new Date(latestDate);
+      predictedDate.setDate(predictedDate.getDate() + daysNeeded);
+
+      const formattedDate = new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }).format(predictedDate);
+
+      resultBox.innerHTML = `
+        <div class="goal-date-main">Around ${formattedDate}</div>
+        <div class="subtext">
+          Latest weight: ${roundValue(latest.weight)} kg ·
+          Target: ${roundValue(targetWeight)} kg ·
+          Average loss: ${roundValue(weeklyLoss)} kg per week ·
+          About ${daysNeeded} days remaining
+        </div>
+      `;
+    }
+
     function render() {
       updateClock();
       renderToday();
       renderBodyProgress();
+      calculateGoalDate();
       renderWeekOverview();
       updatePreview();
     }
@@ -3242,5 +3779,46 @@
       }
     });
   </script>
+
+  <script id="ui-polish-js">
+    function animateQuoteChange() {
+      const quote = document.getElementById("motivationText");
+      if (!quote) return;
+      quote.classList.remove("quote-changing");
+      void quote.offsetWidth;
+      quote.classList.add("quote-changing");
+    }
+
+    const originalShowMotivationQuoteByIndex = window.showMotivationQuoteByIndex;
+    if (typeof originalShowMotivationQuoteByIndex === "function") {
+      window.showMotivationQuoteByIndex = function(index, manual = false) {
+        originalShowMotivationQuoteByIndex(index, manual);
+        animateQuoteChange();
+      };
+    }
+
+    const originalToggleMealForm = window.toggleMealForm;
+    if (typeof originalToggleMealForm === "function") {
+      window.toggleMealForm = function() {
+        originalToggleMealForm();
+        const form = document.getElementById("mealForm");
+        if (form && form.classList.contains("active")) {
+          setTimeout(() => form.scrollIntoView({ behavior: "smooth", block: "nearest" }), 70);
+        }
+      };
+    }
+
+    const originalToggleScanner = window.toggleScanner;
+    if (typeof originalToggleScanner === "function") {
+      window.toggleScanner = function() {
+        originalToggleScanner();
+        const panel = document.getElementById("scannerPanel");
+        if (panel && panel.classList.contains("active")) {
+          setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 70);
+        }
+      };
+    }
+  </script>
+
 </body>
 </html>
